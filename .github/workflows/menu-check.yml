@@ -1,0 +1,29 @@
+name: Check daily menus
+
+on:
+  schedule:
+    # Every hour, all year round. The endpoint itself decides (in Europe/Bratislava
+    # local time) whether this hour is actually one of the scheduled check slots
+    # from the spec - this avoids fixed-UTC cron drifting across DST changes.
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Run the check even outside the scheduled time window"
+        type: boolean
+        default: false
+
+jobs:
+  check-menus:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call check-menus endpoint
+        run: |
+          FORCE="${{ inputs.force }}"
+          URL="${{ secrets.APP_URL }}/api/cron/check-menus"
+          if [ "$FORCE" = "true" ]; then
+            URL="${URL}?force=true"
+          fi
+          curl -sf -X POST "$URL" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -w "\nHTTP %{http_code}\n"

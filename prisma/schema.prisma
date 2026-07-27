@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Restaurant {
+  id          String      @id @default(cuid())
+  name        String
+  address     String?
+  websiteUrl  String?
+  podjestName String      @unique
+  active      Boolean     @default(true)
+  order       Int         @default(0)
+  dailyMenus  DailyMenu[]
+}
+
+model DailyMenu {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  date         DateTime   @db.Date
+  scrapedAt    DateTime
+  isNew        Boolean    @default(true)
+  firstSeenAt  DateTime?
+  sourceType   String
+  contentHash  String
+  items        MenuItem[]
+
+  @@unique([restaurantId, date])
+}
+
+model MenuItem {
+  id          String    @id @default(cuid())
+  dailyMenuId String
+  dailyMenu   DailyMenu @relation(fields: [dailyMenuId], references: [id], onDelete: Cascade)
+  order       Int       @default(0)
+  category    String
+  name        String
+  price       String?
+  allergens   Int[]
+  checked     Boolean   @default(false)
+  checkedAt   DateTime?
+}
