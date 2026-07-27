@@ -1,4 +1,4 @@
-import { PDFParse } from "pdf-parse";
+import { extractText, getDocumentProxy } from "unpdf";
 import { getTodayDateStr } from "@/lib/schedule";
 
 // hotelmetropol.sk blocks bare/bot-looking requests (returns a custom 466
@@ -118,9 +118,9 @@ export async function fetchHotelMetropolTodayMenu(): Promise<FallbackMenuItem[] 
     for (const link of pdfLinks) {
       const pdfRes = await fetch(link, { headers: BROWSER_HEADERS });
       if (!pdfRes.ok) continue;
-      const buf = Buffer.from(await pdfRes.arrayBuffer());
-      const parser = new PDFParse({ data: buf });
-      const { text } = await parser.getText();
+      const buf = new Uint8Array(await pdfRes.arrayBuffer());
+      const pdf = await getDocumentProxy(buf);
+      const { text } = await extractText(pdf, { mergePages: true });
       if (!text.includes(todayMarker)) continue; // not today's PDF - skip
       const items = parseMenuText(text);
       if (items) return items;
