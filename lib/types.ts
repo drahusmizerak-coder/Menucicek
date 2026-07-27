@@ -7,7 +7,7 @@ export interface MenuItemDto {
   checked: boolean;
 }
 
-export type DisplayStatus = "today" | "upcoming" | "stale" | "hidden" | "none";
+export type DisplayStatus = "today" | "upcoming" | "stale" | "none";
 
 export interface DisplayMenuDto {
   status: DisplayStatus;

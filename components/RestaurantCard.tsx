@@ -29,7 +29,7 @@ export default function RestaurantCard({
       >
         <h2 className="text-lg font-semibold text-neutral-900">{restaurant.name}</h2>
         <div className="flex items-center gap-2 shrink-0">
-          {menu.isNew && menu.status !== "hidden" && (
+          {menu.isNew && (
             <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
               NEW
             </span>
@@ -48,11 +48,6 @@ export default function RestaurantCard({
       </div>
 
       <div className="px-4 py-2">
-        {menu.status === "hidden" && (
-          <p className="text-sm text-neutral-400 italic">
-            Dnešné menu sa po 15:00 skrýva. Znova sa zobrazí po najbližšej kontrole.
-          </p>
-        )}
         {menu.status === "none" && (
           <p className="text-sm text-neutral-400 italic">Zatiaľ nemáme menu tejto reštaurácie.</p>
         )}
