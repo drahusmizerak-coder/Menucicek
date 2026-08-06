@@ -57,16 +57,31 @@ export function findByPodjestName(
 // weekDates is always Monday..Friday, in that order (see getCurrentWeekDates).
 const SK_WEEKDAY_NAMES = ["Pondelok", "Utorok", "Streda", "Štvrtok", "Piatok"];
 
+// How far a mismatched `date` may drift from its `day`-implied target date
+// and still be trusted as "probably the right day, just mistagged" rather
+// than genuinely stale data from a different week (seen on PapiZoo, whose
+// Facebook-sourced feed got stuck a full week behind - a "Štvrtok" label
+// there must NOT be allowed to satisfy this week's Thursday).
+const MAX_DAY_LABEL_DRIFT_DAYS = 3;
+
+function daysBetween(a: string, b: string): number {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  return Math.abs(Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / msPerDay;
+}
+
 /**
  * Maps date -> daily menu for the given (Mon-Fri) week. The source's `date`
  * and `day` fields are each independently unreliable in ways confirmed by
- * real data: `date` can be off by a day or a whole stale week while `day`
- * still names the right weekday (seen on Grillbar - date one day early,
- * correct "Pondelok" label), and some entries carry no date/day at all.
- * Resolved in order of confidence:
+ * real data: `date` can be off by a day while `day` still names the right
+ * weekday (seen on Grillbar - date one day early, correct "Pondelok"
+ * label), or `date` can be entirely absent. Resolved in order of confidence:
  *   1. `date` falls inside the target week - trust it directly.
- *   2. `date` doesn't match, but `day` names one of the week's weekdays
- *      that's still unfilled - use it for that weekday.
+ *   2. `date` doesn't match but is close to the target week (within
+ *      MAX_DAY_LABEL_DRIFT_DAYS) and `day` names one of the week's
+ *      weekdays that's still unfilled - use it for that weekday. A `date`
+ *      that's further off (e.g. a whole stale week) is not trusted this
+ *      way even if `day` happens to match, since that's a sign the whole
+ *      entry is stale rather than just mistagged.
  *   3. Leftover entries with neither a usable date nor day - fill any
  *      still-missing day, in order, as a last resort.
  */
@@ -85,7 +100,10 @@ export function normalizeWeekMenus(
     if (dm.date && weekSet.has(dm.date)) {
       map.set(dm.date, dm);
     } else if (dm.day && dateByWeekday.has(dm.day)) {
-      byWeekdayLabel.set(dm.day, dm);
+      const target = dateByWeekday.get(dm.day)!;
+      if (!dm.date || daysBetween(dm.date, target) <= MAX_DAY_LABEL_DRIFT_DAYS) {
+        byWeekdayLabel.set(dm.day, dm);
+      }
     } else if (!dm.date && dm.items?.length) {
       undated.push(dm);
     }
